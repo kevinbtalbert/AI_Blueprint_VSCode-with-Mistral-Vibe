@@ -1,0 +1,22 @@
+name: "VS Code + Mistral Vibe on Cloudera AI"
+slug: "vscode-mistral-vibe-cloudera-ai"
+description: "Browser VS Code with Mistral Vibe CLI and extension; API credentials from project environment variables."
+catalog_classification:
+  - Developer Example
+launchable: true
+lifecycle_status: Active
+industry: General
+tags:
+  - vscode
+  - code-server
+  - mistral-vibe
+  - cloudera-ai
+  - ai-coding-agent
+product_mapping:
+  - Cloudera Machine Learning
+publisher: cloudera
+source: Internal
+public_github_link: "https://github.com/kevinbtalbert/AI_Blueprint_VSCode-with-Mistral-Vibe"
+maintainer_name: "Kevin Talbert"
+date_created: "2026-10-14"
+date_updated: "2026-10-14"
