@@ -18,28 +18,29 @@ RUN curl -fsSL https://code-server.dev/install.sh | sh -s -- --version "${CODE_S
 
 COPY scripts/vscode-launch.sh /usr/local/bin/vscode
 COPY scripts/configure-vibe-from-env.sh /usr/local/bin/configure-vibe-from-env
+COPY scripts/link-vibe-cli.sh /usr/local/bin/link-vibe-cli
+COPY scripts/install-mistral-vibe-cli.sh /usr/local/bin/install-mistral-vibe-cli
+COPY scripts/mistral-vibe-shell.sh /etc/profile.d/mistral-vibe.sh
 
-RUN chmod +x /usr/local/bin/vscode /usr/local/bin/configure-vibe-from-env && \
+RUN chmod +x /usr/local/bin/vscode /usr/local/bin/configure-vibe-from-env \
+      /usr/local/bin/link-vibe-cli /usr/local/bin/install-mistral-vibe-cli && \
     ln -sf /usr/local/bin/vscode /usr/local/bin/ml-runtime-editor && \
+    /usr/local/bin/install-mistral-vibe-cli && \
+    grep -q 'mistral-vibe.sh' /home/cdsw/.bashrc 2>/dev/null || \
+      printf '%s\n' '[ -f /etc/profile.d/mistral-vibe.sh ] && . /etc/profile.d/mistral-vibe.sh' >> /home/cdsw/.bashrc && \
+    chown cdsw:cdsw /home/cdsw/.bashrc && \
     mkdir -p /home/cdsw/.local/share/code-server/User && \
     chown -R cdsw:cdsw /home/cdsw/.local
 
-# Shell sessions inherit Vibe on PATH and project env mapping.
-RUN printf '%s\n' \
-      'export PATH="${HOME}/.local/bin:${PATH}"' \
-      'if [[ -x /usr/local/bin/configure-vibe-from-env ]]; then' \
-      '  # shellcheck source=/dev/null' \
-      '  source /usr/local/bin/configure-vibe-from-env' \
-      'fi' \
-      > /etc/profile.d/mistral-vibe.sh
+ENV PATH="/usr/local/bin:${PATH}"
 
 ENV CODE_SERVER_BIND="127.0.0.1:8090"
 
 ENV ML_RUNTIME_EDITION="VS Code + Mistral Vibe" \
     ML_RUNTIME_EDITOR="VsCode" \
     ML_RUNTIME_KERNEL="Python 3.13" \
-    ML_RUNTIME_SHORT_VERSION="1.0" \
-    ML_RUNTIME_MAINTENANCE_VERSION="0" \
+    ML_RUNTIME_SHORT_VERSION="1.1" \
+    ML_RUNTIME_MAINTENANCE_VERSION="1" \
     ML_RUNTIME_DESCRIPTION="Browser VS Code with Mistral Vibe CLI and extension"
 
 ENV ML_RUNTIME_FULL_VERSION="${ML_RUNTIME_SHORT_VERSION}.${ML_RUNTIME_MAINTENANCE_VERSION}"
@@ -53,12 +54,6 @@ LABEL com.cloudera.ml.runtime.edition=$ML_RUNTIME_EDITION \
 
 WORKDIR /home/cdsw
 USER cdsw
-
-# ── Mistral Vibe CLI (uv + mistral-vibe) ────────────────────────────────────
-# https://docs.mistral.ai/vibe/code/cli/install-setup
-RUN curl -LsSf https://mistral.ai/vibe/install.sh | bash
-
-ENV PATH="/home/cdsw/.local/bin:${PATH}"
 
 # ── Mistral Vibe VS Code extension (Visual Studio Marketplace) ────────────────
 # https://marketplace.visualstudio.com/items?itemName=mistralai.mistral-vibe-code

@@ -25,7 +25,7 @@ This blueprint gives teams a governed Cloudera AI session with a full IDE and Mi
 
 - **In-browser VS Code** via code-server (`ML_RUNTIME_EDITOR=VsCode`)
 - **Python 3.13 PBJ Workbench** base image
-- **Mistral Vibe CLI** installed with the official [install script](https://mistral.ai/vibe/install.sh) (`uv` + `mistral-vibe`)
+- **Mistral Vibe CLI** on **`/usr/local/bin/vibe`** (`pip install mistral-vibe`, with [official install script](https://mistral.ai/vibe/install.sh) as build fallback)
 - **Mistral Vibe VS Code extension** (`mistralai.mistral-vibe-code`) preinstalled from Open VSX (same extension ID as the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=mistralai.mistral-vibe-code))
 - **Project-scoped credentials:** `MISTRAL_API_KEY` and optional `MISTRAL_API_URL` from **Cloudera AI project environment variables** (no secrets baked into the image)
 
@@ -36,7 +36,7 @@ This blueprint gives teams a governed Cloudera AI session with a full IDE and Mi
    **Fast path** — use the published image (no local build):
 
    ```text
-   docker.io/kevintalbert/vscvibe:1.0.0
+   docker.io/kevintalbert/vscvibe:latest
    ```
 
    **Custom build** — when you need a different PBJ base tag or extra packages:
@@ -44,9 +44,9 @@ This blueprint gives teams a governed Cloudera AI session with a full IDE and Mi
    ```bash
    docker build --platform linux/amd64 --pull --rm \
      -f Dockerfile \
-     -t <your-registry>/vscode-mistral-vibe-cloudera-ai:1.0.0 .
+     -t <your-registry>/vscode-mistral-vibe-cloudera-ai:1.1.1 .
 
-   docker push <your-registry>/vscode-mistral-vibe-cloudera-ai:1.0.0
+   docker push <your-registry>/vscode-mistral-vibe-cloudera-ai:1.1.1
    ```
 
    Register your registry URL in the runtime catalog. The image sets `ML_RUNTIME_EDITOR=VsCode` so sessions offer VS Code instead of JupyterLab.
@@ -58,6 +58,14 @@ This blueprint gives teams a governed Cloudera AI session with a full IDE and Mi
 **Base image:** `ml-runtime-pbj-workbench-python3.13-standard:2026.08.1-b5`. If your cluster uses a different maintenance build, update the `FROM` line in `Dockerfile`.
 
 Optional: `CODE_SERVER_BIND` (default `127.0.0.1:8090`).
+
+### Troubleshooting
+
+| Issue | Fix |
+| --- | --- |
+| `vibe: command not found` | You are likely on an **older** image tag. Rebuild/push or use an updated `docker.io/kevintalbert/vscvibe` tag. Quick check: `ls -la /usr/local/bin/vibe`. Temporary fix: `python3 -m pip install --user mistral-vibe` or `curl -LsSf https://mistral.ai/vibe/install.sh \| bash`, then ensure `/usr/local/bin` is on `PATH`. |
+| Extension not preinstalled | Install **Mistral Vibe VS Code** from the Extensions view, or rebuild/push an updated `docker.io/kevintalbert/vscvibe` tag. |
+| Auth errors | Confirm `MISTRAL_API_KEY` on the project and restart the session. |
 
 ## Mistral Vibe credentials (project environment)
 
@@ -93,7 +101,7 @@ For the default Mistral cloud endpoint, omit `MISTRAL_API_URL`.
 | Surface | How |
 | --- | --- |
 | **VS Code extension** | Mistral Vibe icon in the activity bar; uses the same `~/.vibe/` config as the CLI ([extension settings](https://docs.mistral.ai/vibe/code/vs-code-extension/settings)). |
-| **CLI** | Integrated terminal: `vibe` or `vibe --agent plan` ([CLI overview](https://docs.mistral.ai/vibe/code/overview)). |
+| **CLI** | Integrated terminal: type `vibe` (installed to `/usr/local/bin/vibe`). Examples: `vibe`, `vibe --agent plan`, `vibe -p "…"` ([CLI overview](https://docs.mistral.ai/vibe/code/overview)). |
 
 Requirements: active Vibe subscription or API access per [Mistral pricing](https://mistral.ai/pricing#plans) and the [extension marketplace page](https://marketplace.visualstudio.com/items?itemName=mistralai.mistral-vibe-code).
 
@@ -127,12 +135,13 @@ flowchart LR
 | `Dockerfile` | PBJ base, code-server, Mistral Vibe CLI, VS Code extension, runtime labels |
 | `scripts/vscode-launch.sh` | `ml-runtime-editor` entrypoint |
 | `scripts/configure-vibe-from-env.sh` | Maps project env vars into Vibe config |
+| `scripts/install-mistral-vibe-cli.sh` | Build-time: `pip install mistral-vibe` → `/usr/local/bin/vibe` |
 | `METADATA.yaml` | Blueprint catalog metadata |
 
 ## Prerequisites
 
 - Cloudera AI Workbench with permission to add **custom runtimes**
-- **Docker** on **linux/amd64** with pull access to `docker.repository.cloudera.com` (for custom builds only; not required for `docker.io/kevintalbert/vscvibe:1.0.0`)
+- **Docker** on **linux/amd64** with pull access to `docker.repository.cloudera.com` (for custom builds only; not required for `docker.io/kevintalbert/vscvibe:1.1.1`)
 - **Container registry** you can push to and that your cluster can pull from (for custom builds; not required for the pre-built image)
 - Mistral **API key** (and optional custom API URL) stored as **project** environment variables, not in the image
 
